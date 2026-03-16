@@ -119,28 +119,12 @@ app.get('/', (_req, res) => {
 // ==================== 启动 ====================
 
 app.listen(config.port, () => {
+    const auth = config.authTokens?.length ? `${config.authTokens.length} token(s)` : 'open';
     console.log('');
-    console.log('  ╔══════════════════════════════════════╗');
-    console.log(`  ║        Cursor2API v${VERSION.padEnd(21)}║`);
-    console.log('  ╠══════════════════════════════════════╣');
-    console.log(`  ║  Server:  http://localhost:${config.port}      ║`);
-    console.log('  ║  Model:   ' + config.cursorModel.padEnd(26) + '║');
-    console.log('  ║  Auth:    ' + (config.authTokens?.length ? `${config.authTokens.length} token(s)` : 'OPEN (no auth)').padEnd(26) + '║');
-    console.log('  ╠══════════════════════════════════════╣');
-    console.log('  ║  API Endpoints:                      ║');
-    console.log('  ║  • Anthropic: /v1/messages            ║');
-    console.log('  ║  • OpenAI:   /v1/chat/completions     ║');
-    console.log('  ║  • Cursor:   /v1/responses            ║');
-    console.log('  ╠══════════════════════════════════════╣');
-    console.log('  ║  Claude Code:                        ║');
-    console.log(`  ║  export ANTHROPIC_BASE_URL=           ║`);
-    console.log(`  ║    http://localhost:${config.port}              ║`);
-    console.log('  ║  OpenAI / Cursor IDE:                 ║');
-    console.log(`  ║  OPENAI_BASE_URL=                     ║`);
-    console.log(`  ║    http://localhost:${config.port}/v1            ║`);
-    console.log('  ╠══════════════════════════════════════╣');
-    console.log('  ║  📊 Log Viewer:                       ║');
-    console.log(`  ║    http://localhost:${config.port}/logs           ║`);
-    console.log('  ╚══════════════════════════════════════╝');
+    console.log(`  \x1b[36m⚡ Cursor2API v${VERSION}\x1b[0m`);
+    console.log(`  ├─ Server:  \x1b[32mhttp://localhost:${config.port}\x1b[0m`);
+    console.log(`  ├─ Model:   ${config.cursorModel}`);
+    console.log(`  ├─ Auth:    ${auth}`);
+    console.log(`  └─ Logs:    \x1b[35mhttp://localhost:${config.port}/logs\x1b[0m`);
     console.log('');
 });

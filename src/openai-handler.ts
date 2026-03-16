@@ -65,7 +65,6 @@ function convertToAnthropicRequest(body: OpenAIChatRequest): AnthropicRequest {
         if (body.response_format.type === 'json_schema' && body.response_format.json_schema?.schema) {
             jsonFormatSuffix += ` Schema: ${JSON.stringify(body.response_format.json_schema.schema)}`;
         }
-        console.log(`[OpenAI] response_format=${body.response_format.type}, 将追加 JSON 格式提示到用户消息`);
     }
 
     for (const msg of body.messages) {
@@ -752,7 +751,6 @@ function stripMarkdownJsonWrapper(text: string): string {
     const trimmed = text.trim();
     const match = trimmed.match(/^```(?:json)?\s*\n([\s\S]*?)\n\s*```$/);
     if (match) {
-        console.log(`[OpenAI] 剥离 markdown JSON 包裹: ${trimmed.length} → ${match[1].trim().length} chars`);
         return match[1].trim();
     }
     return text;
@@ -776,7 +774,6 @@ function writeOpenAISSE(res: Response, data: OpenAIChatCompletionChunk): void {
 export async function handleOpenAIResponses(req: Request, res: Response): Promise<void> {
     try {
         const body = req.body;
-        console.log(`[OpenAI] 收到 /v1/responses 请求: model=${body.model}`);
 
         // 将 Responses API 格式转换为 Chat Completions 格式
         const chatBody = responsesToChatCompletions(body);

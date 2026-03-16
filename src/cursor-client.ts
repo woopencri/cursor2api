@@ -58,7 +58,6 @@ export async function sendCursorRequest(
             const msg = err instanceof Error ? err.message : String(err);
             console.error(`[Cursor] 请求失败 (${attempt}/${maxRetries}): ${msg.substring(0, 100)}`);
             if (attempt < maxRetries) {
-                console.log(`[Cursor] 2s 后重试...`);
                 await new Promise(r => setTimeout(r, 2000));
             } else {
                 throw err;

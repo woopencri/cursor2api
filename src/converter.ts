@@ -180,13 +180,11 @@ export async function convertToCursorRequest(req: AnthropicRequest): Promise<Cur
     if (req.thinking?.type === 'enabled') {
         const thinkingHint = '\n\nBefore responding, think through the problem step by step inside <thinking>...</thinking> tags. Your thinking will be extracted and returned separately. After thinking, provide your actual response outside the tags.';
         combinedSystem = (combinedSystem || '') + thinkingHint;
-        console.log(`[Converter] Thinking 模式已启用 (budget=${req.thinking.budget_tokens ?? 'auto'})`);
     }
 
     if (hasTools) {
         const tools = req.tools!;
         const toolChoice = req.tool_choice;
-        console.log(`[Converter] 工具数量: ${tools.length}, tool_choice: ${toolChoice?.type ?? 'auto'}`);
 
         const hasCommunicationTool = tools.some(t => ['attempt_completion', 'ask_followup_question', 'AskFollowupQuestion'].includes(t.name));
         let toolInstructions = buildToolInstructions(tools, hasCommunicationTool, toolChoice);
@@ -343,23 +341,17 @@ export async function convertToCursorRequest(req: AnthropicRequest): Promise<Cur
                     const originalLen = part.text.length;
                     part.text = part.text.substring(0, EARLY_MSG_MAX_CHARS) +
                         `\n\n... [truncated ${originalLen - EARLY_MSG_MAX_CHARS} chars for context budget]`;
-                    console.log(`[Converter] 📦 压缩早期消息 msg[${i}] (${msg.role}): ${originalLen} → ${part.text.length} chars`);
                 }
             }
         }
     }
 
-    // 诊断日志：记录发给 Cursor docs AI 的消息摘要
+    // 统计总字符数（用于动态预算）
     let totalChars = 0;
     for (let i = 0; i < messages.length; i++) {
         const m = messages[i];
-        const textLen = m.parts.reduce((s, p) => s + (p.text?.length ?? 0), 0);
-        totalChars += textLen;
-        console.log(`[Converter]   cursor_msg[${i}] role=${m.role} chars=${textLen}${i < 2 ? ' (few-shot)' : ''}`);
+        totalChars += m.parts.reduce((s, p) => s + (p.text?.length ?? 0), 0);
     }
-    // 更新动态预算的上下文字符数（用实际 Cursor 消息计算值覆盖之前的估算值）
-    setCurrentContextChars(totalChars);
-    console.log(`[Converter] 总消息数=${messages.length}, 总字符=${totalChars}`);
 
     return {
         model: config.cursorModel,
@@ -421,7 +413,6 @@ function extractToolResultNatural(msg: AnthropicMessage): string {
             if (resultText.length > budget) {
                 const truncated = resultText.slice(0, budget);
                 resultText = truncated + `\n\n... (truncated, ${resultText.length} → ${budget} chars, context=${_currentContextChars})`;
-                console.log(`[Converter] 截断工具结果: ${resultText.length} → ${budget} chars (上下文=${_currentContextChars})`);
             }
 
             if (block.is_error) {
@@ -462,7 +453,6 @@ function extractMessageText(msg: AnthropicMessage): string {
                     const sizeKB = Math.round(block.source.data.length * 0.75 / 1024);
                     const mediaType = block.source.media_type || 'unknown';
                     parts.push(`[Image attached: ${mediaType}, ~${sizeKB}KB. Note: Image was not processed by vision system. The content cannot be viewed directly.]`);
-                    console.log(`[Converter] ❗ 图片块未被 vision 预处理掉，已添加占位符 (${mediaType}, ~${sizeKB}KB)`);
                 } else {
                     parts.push('[Image attached but could not be processed]');
                 }
@@ -634,7 +624,6 @@ function tolerantParse(jsonStr: string): any {
                         }
                     }
                 }
-                console.log(`[Converter] tolerantParse 正则兜底成功: tool=${toolName}, params=${Object.keys(params).length} fields`);
                 return { tool: toolName, parameters: params };
             }
         } catch { /* ignore */ }
@@ -694,7 +683,6 @@ function tolerantParse(jsonStr: string): any {
                 }
 
                 if (Object.keys(params).length > 0) {
-                    console.log(`[Converter] tolerantParse 逆向贪婪提取成功: tool=${toolName}, fields=[${Object.keys(params).join(', ')}]`);
                     return { tool: toolName, parameters: params };
                 }
             }
@@ -778,7 +766,6 @@ export function parseToolCalls(responseText: string): {
                 if (looksLikeToolCall) {
                     console.error('[Converter] tolerantParse 失败（疑似工具调用）:', e);
                 } else {
-                    console.warn(`[Converter] 跳过非工具调用的 json 代码块 (${jsonContent.length} chars)`);
                 }
             }
         } else {
@@ -793,10 +780,8 @@ export function parseToolCalls(responseText: string): {
                         args = fixToolCallArguments(name, args);
                         toolCalls.push({ name, arguments: args });
                         blocksToRemove.push({ start: blockStart, end: responseText.length });
-                        console.log(`[Converter] ⚠️ 从截断的代码块中恢复工具调用: ${name}`);
                     }
                 } catch {
-                    console.log(`[Converter] 截断的代码块无法解析为工具调用`);
                 }
             }
         }
@@ -861,7 +846,6 @@ async function preprocessImages(messages: AnthropicMessage[]): Promise<void> {
                 if (block.source?.type === 'url' && block.source.data && !block.source.data.startsWith('data:')) {
                     urlImages++;
                     try {
-                        console.log(`[Converter] 📥 下载远程图片: ${block.source.data.substring(0, 100)}...`);
                         const response = await fetch(block.source.data, {
                             ...getVisionProxyFetchOptions(),
                         } as any);
@@ -875,7 +859,6 @@ async function preprocessImages(messages: AnthropicMessage[]): Promise<void> {
                             ...block,
                             source: { type: 'base64', media_type: mediaType, data: base64Data },
                         };
-                        console.log(`[Converter] ✅ 远程图片已转为 base64 (${mediaType}, ${Math.round(base64Data.length * 0.75 / 1024)}KB)`);
                     } catch (err) {
                         console.error(`[Converter] ❌ 远程图片下载失败:`, err);
                         // 下载失败时替换为错误提示文本
@@ -891,10 +874,10 @@ async function preprocessImages(messages: AnthropicMessage[]): Promise<void> {
 
     if (totalImages === 0) return;
     if (urlImages > 0) {
-        console.log(`[Converter] 📸 检测到 ${totalImages} 张图片（其中 ${urlImages} 张远程 URL 已转 base64）`);
+        // image stats now in web UI
     }
 
-    console.log(`[Converter] 📸 检测到 ${totalImages} 张图片，启动 vision 预处理...`);
+    // vision processing logged in web UI
 
     // 调用 vision 拦截器处理（OCR / 外部 API）
     try {
@@ -910,9 +893,9 @@ async function preprocessImages(messages: AnthropicMessage[]): Promise<void> {
         }
 
         if (remainingImages > 0) {
-            console.log(`[Converter] ⚠️ vision 处理后仍有 ${remainingImages} 张图片未被替换（可能 vision.enabled=false 或处理失败）`);
+            // vision incomplete logged in web UI
         } else {
-            console.log(`[Converter] ✅ 全部 ${totalImages} 张图片已成功处理为文本描述`);
+            // vision complete logged in web UI
         }
     } catch (err) {
         console.error(`[Converter] ❌ vision 预处理失败:`, err);

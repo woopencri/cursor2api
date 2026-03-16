@@ -112,8 +112,6 @@ export function repairExactMatchToolArguments(
             if ('new_string' in args) args.new_string = fixed;
             else if ('new_str' in args) args.new_str = fixed;
         }
-
-        console.log(`[ToolFixer] 修复了 ${toolName} 的 old_string 精确匹配`);
     } catch {
         // best-effort: 文件读取失败不阻塞请求
     }

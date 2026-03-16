@@ -27,10 +27,8 @@ export async function applyVisionInterceptor(messages: AnthropicMessage[]): Prom
             try {
                 let descriptions = '';
                 if (config.vision.mode === 'ocr') {
-                    console.log(`[Vision] 启用纯本地 OCR 模式，正在提取 ${imagesToAnalyze.length} 张图片上的文字... (无需 API Key)`);
                     descriptions = await processWithLocalOCR(imagesToAnalyze);
                 } else {
-                    console.log(`[Vision] 启用外部 API 模式，正在分析 ${imagesToAnalyze.length} 张图片...`);
                     descriptions = await callVisionAPI(imagesToAnalyze);
                 }
 
