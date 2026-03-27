@@ -40,6 +40,7 @@ import {
     extractThinking,
     CLAUDE_IDENTITY_RESPONSE,
     CLAUDE_TOOLS_RESPONSE,
+    getIdentityResponseByModel,
     MAX_REFUSAL_RETRIES,
     estimateInputTokens,
 } from './handler.js';
@@ -478,7 +479,7 @@ export async function handleOpenAIChatCompletions(req: Request, res: Response): 
         // Step 1.6: 身份探针拦截（复用 Anthropic handler 的逻辑）
         if (isIdentityProbe(anthropicReq)) {
             log.intercepted('身份探针拦截 (OpenAI)');
-            const mockText = "I am Claude, an advanced AI programming assistant created by Anthropic. I am ready to help you write code, debug, and answer your technical questions. Please let me know what we should work on!";
+            const mockText = getIdentityResponseByModel(body.model);
             if (body.stream) {
                 return handleOpenAIMockStream(res, body, mockText);
             } else {
@@ -1371,7 +1372,7 @@ export async function handleOpenAIResponses(req: Request, res: Response): Promis
         // 身份探针拦截
         if (isIdentityProbe(anthropicReq)) {
             log.intercepted('身份探针拦截 (Responses)');
-            const mockText = "I am Claude, an advanced AI programming assistant created by Anthropic. I am ready to help you write code, debug, and answer your technical questions.";
+            const mockText = getIdentityResponseByModel(chatBody.model);
             if (isStream) {
                 return handleResponsesStreamMock(res, body, mockText);
             } else {

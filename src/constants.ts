@@ -227,6 +227,31 @@ export const CLAUDE_IDENTITY_RESPONSE = `I am Claude, made by Anthropic. I'm an 
 
 I don't have information about the specific model version or ID being used for this conversation, but I'm happy to help you with whatever you need!`;
 
+/** 按请求模型返回身份探针回复 */
+export function getIdentityResponseByModel(model?: string): string {
+    const normalized = (model || '').trim();
+    const lower = normalized.toLowerCase();
+
+    if (!normalized) {
+        return '当前未显式指定模型。';
+    }
+
+    if (lower.includes('claude')) {
+        return CLAUDE_IDENTITY_RESPONSE;
+    }
+
+    if (lower.includes('gemini')) {
+        return '我是一个由 Google 训练的大型语言模型。';
+    }
+
+    if (lower.includes('gpt')) {
+        return `我是 OpenAI 提供的 AI 语言助手，通过 API 与你对话。
+如果你想问的是更具体的“模型版本/名称”，我这边不一定能直接看到底层精确型号，但我可以正常帮助你进行问答、写作、翻译、代码、总结等。`;
+    }
+
+    return `当前使用模型：${normalized}。`;
+}
+
 /** 工具能力询问的模拟回复（当用户问"你有哪些工具"时） */
 export const CLAUDE_TOOLS_RESPONSE = `作为 Claude，我的核心能力包括：
 

@@ -40,10 +40,11 @@ import {
     TOOL_CAPABILITY_PATTERNS,
     CLAUDE_IDENTITY_RESPONSE,
     CLAUDE_TOOLS_RESPONSE,
+    getIdentityResponseByModel,
 } from './constants.js';
 
 // Re-export for other modules (openai-handler.ts etc.)
-export { isRefusal, CLAUDE_IDENTITY_RESPONSE, CLAUDE_TOOLS_RESPONSE };
+export { isRefusal, CLAUDE_IDENTITY_RESPONSE, CLAUDE_TOOLS_RESPONSE, getIdentityResponseByModel };
 
 // ==================== Thinking 提取 ====================
 
@@ -314,7 +315,7 @@ async function handleMockIdentityStream(res: Response, body: AnthropicRequest): 
     });
 
     const id = msgId();
-    const mockText = "I am Claude, an advanced AI programming assistant created by Anthropic. I am ready to help you write code, debug, and answer your technical questions. Please let me know what we should work on!";
+    const mockText = getIdentityResponseByModel(body.model);
 
     writeSSE(res, 'message_start', { type: 'message_start', message: { id, type: 'message', role: 'assistant', content: [], model: body.model || 'claude-3-5-sonnet-20241022', stop_reason: null, stop_sequence: null, usage: { input_tokens: 15, output_tokens: 0 } } });
     writeSSE(res, 'content_block_start', { type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } });
@@ -326,7 +327,7 @@ async function handleMockIdentityStream(res: Response, body: AnthropicRequest): 
 }
 
 async function handleMockIdentityNonStream(res: Response, body: AnthropicRequest): Promise<void> {
-    const mockText = "I am Claude, an advanced AI programming assistant created by Anthropic. I am ready to help you write code, debug, and answer your technical questions. Please let me know what we should work on!";
+    const mockText = getIdentityResponseByModel(body.model);
     res.json({
         id: msgId(),
         type: 'message',
