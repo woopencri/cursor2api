@@ -45,6 +45,14 @@ import {
     estimateInputTokens,
 } from './handler.js';
 
+function delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function getRandomIdentityDelayMs(): number {
+    return 3000 + Math.floor(Math.random() * 2001);
+}
+
 function chatId(): string {
     return 'chatcmpl-' + uuidv4().replace(/-/g, '').substring(0, 24);
 }
@@ -514,13 +522,14 @@ export async function handleOpenAIChatCompletions(req: Request, res: Response): 
 
 // ==================== 身份探针模拟响应 ====================
 
-function handleOpenAIMockStream(res: Response, body: OpenAIChatRequest, mockText: string): void {
+async function handleOpenAIMockStream(res: Response, body: OpenAIChatRequest, mockText: string): Promise<void> {
     res.writeHead(200, {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
         'Connection': 'keep-alive',
         'X-Accel-Buffering': 'no',
     });
+    await delay(getRandomIdentityDelayMs());
     const id = chatId();
     const created = Math.floor(Date.now() / 1000);
     writeOpenAISSE(res, {
@@ -535,7 +544,9 @@ function handleOpenAIMockStream(res: Response, body: OpenAIChatRequest, mockText
     res.end();
 }
 
-function handleOpenAIMockNonStream(res: Response, body: OpenAIChatRequest, mockText: string): void {
+async function handleOpenAIMockNonStream(res: Response, body: OpenAIChatRequest, mockText: string): Promise<void> {
+    await delay(getRandomIdentityDelayMs());
+
     res.json({
         id: chatId(),
         object: 'chat.completion',
@@ -1401,13 +1412,15 @@ export async function handleOpenAIResponses(req: Request, res: Response): Promis
 /**
  * 模拟身份响应 — 流式 (Responses API SSE 格式)
  */
-function handleResponsesStreamMock(res: Response, body: Record<string, unknown>, mockText: string): void {
+async function handleResponsesStreamMock(res: Response, body: Record<string, unknown>, mockText: string): Promise<void> {
     res.writeHead(200, {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
         'Connection': 'keep-alive',
         'X-Accel-Buffering': 'no',
     });
+
+    await delay(getRandomIdentityDelayMs());
 
     const respId = responsesId();
     const itemId = responsesItemId();
@@ -1420,7 +1433,9 @@ function handleResponsesStreamMock(res: Response, body: Record<string, unknown>,
 /**
  * 模拟身份响应 — 非流式 (Responses API JSON 格式)
  */
-function handleResponsesNonStreamMock(res: Response, body: Record<string, unknown>, mockText: string): void {
+async function handleResponsesNonStreamMock(res: Response, body: Record<string, unknown>, mockText: string): Promise<void> {
+    await delay(getRandomIdentityDelayMs());
+
     const respId = responsesId();
     const itemId = responsesItemId();
     const model = (body.model as string) || 'gpt-4';

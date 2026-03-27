@@ -23,6 +23,14 @@ import { createRequestLogger, type RequestLogger } from './logger.js';
 import { estimateTokens } from './tokenizer.js';
 import { createIncrementalTextStreamer, hasLeadingThinking, splitLeadingThinkingBlocks, stripThinkingTags } from './streaming-text.js';
 
+function delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function getRandomIdentityDelayMs(): number {
+    return 3000 + Math.floor(Math.random() * 2001);
+}
+
 function msgId(): string {
     return 'msg_' + uuidv4().replace(/-/g, '').substring(0, 24);
 }
@@ -314,6 +322,8 @@ async function handleMockIdentityStream(res: Response, body: AnthropicRequest): 
         'X-Accel-Buffering': 'no',
     });
 
+    await delay(getRandomIdentityDelayMs());
+
     const id = msgId();
     const mockText = getIdentityResponseByModel(body.model);
 
@@ -327,6 +337,8 @@ async function handleMockIdentityStream(res: Response, body: AnthropicRequest): 
 }
 
 async function handleMockIdentityNonStream(res: Response, body: AnthropicRequest): Promise<void> {
+    await delay(getRandomIdentityDelayMs());
+
     const mockText = getIdentityResponseByModel(body.model);
     res.json({
         id: msgId(),
