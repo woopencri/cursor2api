@@ -26,7 +26,7 @@ timeout: 120
 # ⚠️ Node.js fetch 不读取 HTTP_PROXY / HTTPS_PROXY 环境变量，
 #    必须在此处或通过 PROXY 环境变量显式配置代理。
 # 支持 http 代理，含认证格式: http://用户名:密码@代理地址:端口
-# 💡 国内可直连 Cursor API，通常不需要配置全局代理
+# 💡 除 Vision 图片 API 外，其它请求会使用全局代理；Vision 请优先单独配置 vision.proxy
 # proxy: "http://127.0.0.1:7890"
 
 # Cursor 使用的模型
@@ -223,9 +223,9 @@ vision:
   # model: "meta-llama/llama-3.2-11b-vision-instruct:free"
   
   # Vision 独立代理（可选）
-  # 💡 Cursor API 国内可直连无需代理，但图片分析 API（OpenAI/OpenRouter）可能需要
-  #    配置此项后只有图片 API 走代理，不影响主请求的响应速度
-  #    如果不配，会回退到上面的全局 proxy（如果有的话）
+  # 💡 图片分析 API（OpenAI/OpenRouter）可单独走代理
+  #    配置此项后只有图片 API 走代理，不影响其它请求
+  #    如果不配，则默认直连（不继承上面的全局 proxy）
   # proxy: "http://127.0.0.1:7890"
 
 # ==================== 日志持久化配置（可选） ====================

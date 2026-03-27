@@ -10,6 +10,7 @@
  *  2. 有代理时返回含 dispatcher 的对象
  *  3. ProxyAgent 缓存（单例）
  *  4. 各种代理 URL 格式支持
+ *  5. Vision 独立代理优先，未配置时默认直连
  */
 
 // ─── 测试框架 ──────────────────────────────────────────────────────────
@@ -56,9 +57,11 @@ class MockProxyAgent {
 
 // 内联与 src/proxy-agent.ts 同逻辑的实现
 let cachedAgent = undefined;
+let cachedVisionAgent = undefined;
 
 function resetCache() {
     cachedAgent = undefined;
+    cachedVisionAgent = undefined;
 }
 
 function getProxyDispatcher() {
@@ -77,6 +80,20 @@ function getProxyDispatcher() {
 function getProxyFetchOptions() {
     const dispatcher = getProxyDispatcher();
     return dispatcher ? { dispatcher } : {};
+}
+
+function getVisionProxyFetchOptions() {
+    const config = getConfig();
+    const visionProxy = config.vision?.proxy;
+
+    if (visionProxy) {
+        if (!cachedVisionAgent) {
+            cachedVisionAgent = new MockProxyAgent(visionProxy);
+        }
+        return { dispatcher: cachedVisionAgent };
+    }
+
+    return {};
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -213,15 +230,48 @@ test('有代理时展开插入 dispatcher 且不覆盖其他字段', () => {
 });
 
 // ════════════════════════════════════════════════════════════════════
-// 5. config.ts 集成验证（环境变量优先级）
+// 5. Vision 独立代理行为
 // ════════════════════════════════════════════════════════════════════
-console.log('\n📦 [5] config 环境变量集成验证\n');
+console.log('\n📦 [5] Vision 独立代理\n');
+
+test('vision.proxy 已设置时应优先使用 Vision 代理', () => {
+    resetCache();
+    mockConfig = {
+        proxy: 'http://global-proxy:7890',
+        vision: { proxy: 'http://vision-proxy:7891' }
+    };
+    const opts = getVisionProxyFetchOptions();
+    assert(opts.dispatcher instanceof MockProxyAgent, '应包含 Vision dispatcher');
+    assertEqual(opts.dispatcher.url, 'http://vision-proxy:7891');
+});
+
+test('vision.proxy 未设置时默认直连，不回退全局代理', () => {
+    resetCache();
+    mockConfig = {
+        proxy: 'http://global-proxy:7890',
+        vision: {}
+    };
+    const opts = getVisionProxyFetchOptions();
+    assertEqual(Object.keys(opts).length, 0, '应默认直连');
+});
+
+test('Vision dispatcher 多次调用复用同一实例', () => {
+    resetCache();
+    mockConfig = { vision: { proxy: 'http://vision-proxy:7891' } };
+    const opts1 = getVisionProxyFetchOptions();
+    const opts2 = getVisionProxyFetchOptions();
+    assert(opts1.dispatcher === opts2.dispatcher, 'Vision dispatcher 应为同一实例');
+});
+
+// ════════════════════════════════════════════════════════════════════
+// 6. config.ts 集成验证（环境变量优先级）
+// ════════════════════════════════════════════════════════════════════
+console.log('\n📦 [6] config 环境变量集成验证\n');
 
 test('PROXY 环境变量应覆盖 config.yaml（逻辑验证）', () => {
     // 模拟 config.ts 的覆盖逻辑：env > yaml
     let config = { proxy: 'http://yaml-proxy:1234' };
     const envProxy = 'http://env-proxy:5678';
-    // 模拟 config.ts 第 49 行逻辑
     if (envProxy) config.proxy = envProxy;
     assertEqual(config.proxy, 'http://env-proxy:5678', 'PROXY 环境变量应覆盖 yaml 配置');
 });

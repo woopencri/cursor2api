@@ -43,8 +43,8 @@ export function getProxyFetchOptions(): Record<string, unknown> {
 }
 
 /**
- * ★ Vision 独立代理：优先使用 vision.proxy，否则回退到全局 proxy
- * Cursor API 国内可直连不需要代理，但图片分析 API 可能需要
+ * ★ Vision 独立代理：优先使用 vision.proxy，否则直连
+ * Cursor API 默认直连，图片分析 API 可单独配置代理
  */
 export function getVisionProxyFetchOptions(): Record<string, unknown> {
     const config = getConfig();
@@ -58,6 +58,6 @@ export function getVisionProxyFetchOptions(): Record<string, unknown> {
         return { dispatcher: cachedVisionAgent };
     }
 
-    // 回退到全局代理
-    return getProxyFetchOptions();
+    // 默认直连
+    return {};
 }

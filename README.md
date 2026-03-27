@@ -35,7 +35,7 @@
 - **🆕 上下文压力膨胀** - 虚增 `input_tokens` 让客户端（Claude Code）提前触发自动压缩，从根源防止截断
 - **🆕 自适应历史预算** - 工具数量越多，自动预留越多输出空间（90 个工具约多留 8K tokens）
 - **🆕 工具结果智能截断** - 按工具类型差异化截断（Read/Bash/Search 各用不同头尾比例）
-- **🆕 Vision 独立代理** - 图片 API 单独走代理，Cursor API 保持直连不受影响
+- **🆕 Vision 独立代理** - 图片 API 可单独走代理；未配置 `vision.proxy` 时直连，不继承全局代理
 - **🆕 计费头清除** - 自动清除 `x-anthropic-billing-header` 防止注入警告
 - **工具参数自动修复** - 字段名映射 (`file_path` → `path`)、智能引号替换、模糊匹配修复
 - **多模态视觉降级处理** - 内置纯本地 CPU OCR 图片文字提取（零配置免 Key），或支持外接第三方免费视觉大模型 API 解释图片
@@ -77,7 +77,7 @@ cp config.yaml.example config.yaml
 | `thinking.enabled` | Thinking 开关（最高优先级） | 跟随客户端 |
 | `compression.enabled` | 压缩开关 | `true` |
 | `compression.level` | 压缩级别 1-3 | `2` (中等) |
-| `proxy` | 全局代理（可选） | 不配置 |
+| `proxy` | 全局代理（可选，Vision 默认不继承） | 不配置 |
 | `vision.enabled` | 开启视觉拦截 | `true` |
 | `vision.mode` | 视觉模式：`ocr` / `api` | `ocr` |
 | `vision.proxy` | Vision 独立代理 | 不配置 |
@@ -256,7 +256,7 @@ AI 按此格式输出 → 我们解析并转换为标准的 Anthropic `tool_use`
 |----------|------|
 | `PORT` | 服务端口 |
 | `AUTH_TOKEN` | API 鉴权 token（逗号分隔多个） |
-| `PROXY` | 全局代理地址 |
+| `PROXY` | 全局代理地址（Vision 默认不继承；Vision 请优先用 `vision.proxy`） |
 | `CURSOR_MODEL` | Cursor 使用的模型 |
 | `THINKING_ENABLED` | Thinking 开关 (`true`/`false`) |
 | `COMPRESSION_ENABLED` | 压缩开关 (`true`/`false`) |
