@@ -22,7 +22,7 @@ services:
         sync: false
       # 使用的模型
       - key: CURSOR_MODEL
-        value: anthropic/claude-sonnet-4.6
+        value: google/gemini-3-flash
       # 历史 token 限制
       - key: MAX_HISTORY_TOKENS
         value: 120000
